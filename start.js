@@ -32,3 +32,4 @@ electron.on('exit', () => {
     server.kill();
     process.exit();
 });
+
