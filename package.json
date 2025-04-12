@@ -1,0 +1,21 @@
+{
+  "name": "jakesapplications",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron main.js",
+    "server": "node server.js",
+    "launch": "node start.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "electron": "^35.1.5"
+  }
+}

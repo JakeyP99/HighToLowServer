@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Waiting Room</title>
+</head>
+<body>
+    <h1>Waiting Room</h1>
+    <ul id="playerList"></ul>
+    <button id="startBtn" onclick="startGame()" style="display: none;">Start Game</button>
+
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const playerList = document.getElementById('playerList');
+        const startBtn = document.getElementById('startBtn');
+
+        socket.on('updatePlayers', (players) => {
+            // Clear the list
+            playerList.innerHTML = '';
+
+            // Add each player name to the list
+            players.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = p.name;
+                playerList.appendChild(li);
+            });
+
+            // Show start button if players exist
+            startBtn.style.display = players.length > 0 ? 'block' : 'none';
+        });
+
+        function startGame() {
+            socket.emit('startGame');
+        }
+
+        socket.on('gameStarted', () => {
+            document.body.innerHTML = '<h2>Game Started!</h2>';
+        });
+    </script>
+</body>
+</html>
