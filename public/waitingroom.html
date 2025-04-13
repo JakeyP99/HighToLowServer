@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiting Room</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .content-container {
+            position: relative;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 800px;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .floating-object {
+            position: fixed;
+            pointer-events: none;
+            user-select: none;
+            z-index: 1;
+            opacity: 0.8;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+        }
+
+        .float-left {
+            animation: floatFromLeft 8s linear forwards;
+            left: -100px;
+        }
+
+        .float-right {
+            animation: floatFromRight 8s linear forwards;
+            right: -100px;
+        }
+
+        .float-top {
+            animation: floatFromTop 8s linear forwards;
+            top: -100px;
+        }
+
+        .float-bottom {
+            animation: floatFromBottom 8s linear forwards;
+            bottom: -100px;
+        }
+
+        @keyframes floatFromLeft {
+            0% {
+                transform: translate(0, var(--start-y)) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translate(100px, var(--start-y)) rotate(90deg);
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--float-distance), var(--target-y)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes floatFromRight {
+            0% {
+                transform: translate(0, var(--start-y)) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translate(-100px, var(--start-y)) rotate(90deg);
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(calc(var(--float-distance) * -1), var(--target-y)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes floatFromTop {
+            0% {
+                transform: translate(var(--start-x), 0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translate(var(--start-x), 100px) rotate(90deg);
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--target-x), var(--float-distance)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes floatFromBottom {
+            0% {
+                transform: translate(var(--start-x), 0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translate(var(--start-x), -100px) rotate(90deg);
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--target-x), calc(var(--float-distance) * -1)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .game-element {
+            font-size: 24px;
+            position: absolute;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            text-align: center;
+            margin: 0 auto 30px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: pulse 2s infinite;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            width: 100%;
+        }
+
+        .waiting-message {
+            text-align: center;
+            margin: 20px auto;
+            font-size: 1.2em;
+            opacity: 0.8;
+            position: relative;
+            width: 100%;
+        }
+
+        #playerList {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        #playerList li {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px 0;
+            padding: 15px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            transform: translateX(0);
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #playerList li:hover {
+            transform: translateX(10px) scale(1.02);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        #playerList li::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        #playerList li:hover::after {
+            left: 100%;
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots::after {
+            content: '...';
+            animation: loading 1.5s infinite;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0;
+            animation: confetti 5s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        @keyframes confetti {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes loading {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div class="content-container">
+        <h1>Waiting Room</h1>
+        <div class="waiting-message">
+            Waiting for other players to join<span class="loading-dots"></span>
+        </div>
+        <ul id="playerList"></ul>
+    </div>
+
+    <!-- Load socket.io from the server -->
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <!-- Load our waiting room script -->
+    <script src="waitingroom.js"></script>
+
+    <script>
+        // Game elements that will float up
+        const gameElements = [
+            { emoji: '🎮', size: '24px', color: '#ff6b6b' },
+            { emoji: '🎲', size: '28px', color: '#4ecdc4' },
+            { emoji: '🎯', size: '32px', color: '#45b7d1' },
+            { emoji: '🎪', size: '26px', color: '#96ceb4' },
+            { emoji: '🎨', size: '30px', color: '#ffeead' },
+            { emoji: '🎭', size: '30px', color: '#ff6f69' },
+            { emoji: '🎲', size: '28px', color: '#ffcc5c' },
+            { emoji: '🎮', size: '24px', color: '#88d8b0' },
+            { emoji: '🎸', size: '26px', color: '#ff9ff3' },
+            { emoji: '🎷', size: '28px', color: '#feca57' },
+            { emoji: '🎺', size: '30px', color: '#ff6b6b' },
+            { emoji: '🎻', size: '32px', color: '#48dbfb' },
+            { emoji: '🎼', size: '24px', color: '#1dd1a1' },
+            { emoji: '🎵', size: '28px', color: '#f368e0' },
+            { emoji: '🎶', size: '30px', color: '#ff9f43' },
+            { emoji: '🎤', size: '32px', color: '#ee5253' }
+        ];
+
+        function createFloatingElement() {
+            const container = document.querySelector('.content-container');
+            const containerRect = container.getBoundingClientRect();
+            
+            const element = gameElements[Math.floor(Math.random() * gameElements.length)];
+            const floatingDiv = document.createElement('div');
+            floatingDiv.className = 'floating-object';
+            
+            // Randomly choose which side to start from
+            const sides = ['left', 'right', 'top', 'bottom'];
+            const side = sides[Math.floor(Math.random() * sides.length)];
+            floatingDiv.classList.add('float-' + side);
+            
+            // Calculate random start and target positions
+            const screenMiddle = window.innerWidth / 2;
+            const containerMiddle = containerRect.left + (containerRect.width / 2);
+            const isLeftSide = Math.random() > 0.5;
+            
+            let startX, startY, targetX, targetY, floatDistance;
+            
+            switch(side) {
+                case 'left':
+                case 'right':
+                    startY = Math.random() * (window.innerHeight - 200) + 100;
+                    floatDistance = Math.random() * 300 + 200;
+                    targetY = startY + (Math.random() * 200 - 100);
+                    
+                    if (side === 'left') {
+                        targetX = isLeftSide ? containerRect.left - 100 : containerRect.right + 100;
+                    } else {
+                        targetX = isLeftSide ? containerRect.left - 100 : containerRect.right + 100;
+                    }
+                    
+                    floatingDiv.style.setProperty('--start-y', startY + 'px');
+                    floatingDiv.style.setProperty('--target-y', targetY - startY + 'px');
+                    floatingDiv.style.setProperty('--float-distance', floatDistance + 'px');
+                    break;
+                    
+                case 'top':
+                case 'bottom':
+                    startX = Math.random() * window.innerWidth;
+                    floatDistance = Math.random() * 300 + 200;
+                    targetX = startX + (Math.random() * 400 - 200);
+                    
+                    floatingDiv.style.setProperty('--start-x', startX + 'px');
+                    floatingDiv.style.setProperty('--target-x', targetX - startX + 'px');
+                    floatingDiv.style.setProperty('--float-distance', floatDistance + 'px');
+                    break;
+            }
+            
+            // Random animation duration between 5 and 8 seconds
+            floatingDiv.style.animationDuration = (Math.random() * 3 + 5) + 's';
+            
+            const gameElement = document.createElement('div');
+            gameElement.className = 'game-element';
+            gameElement.textContent = element.emoji;
+            gameElement.style.fontSize = element.size;
+            gameElement.style.color = element.color;
+            
+            floatingDiv.appendChild(gameElement);
+            document.body.appendChild(floatingDiv);
+            
+            // Remove element after animation completes
+            setTimeout(() => {
+                floatingDiv.remove();
+            }, 8000);
+        }
+
+        // Create initial floating elements
+        for (let i = 0; i < 8; i++) {
+            setTimeout(createFloatingElement, i * 800);
+        }
+
+        // Keep creating new floating elements
+        setInterval(createFloatingElement, 1200);
+
+        // Add confetti effect when new player joins
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // Get content container position and size
+                const container = document.querySelector('.content-container');
+                const containerRect = container.getBoundingClientRect();
+                
+                // Calculate safe zones for confetti
+                let x;
+                do {
+                    x = Math.random() * window.innerWidth;
+                } while (x > containerRect.left - 50 && x < containerRect.right + 50);
+                
+                confetti.style.left = x + 'px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        // Listen for new player events
+        const socket = io();
+        socket.on('playerJoined', () => {
+            createConfetti();
+        });
+    </script>
+</body>
+</html>
