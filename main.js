@@ -13,8 +13,7 @@ function createWindow() {
         }
     });
 
-    // Load our local index.html file from the public folder
-    mainWindow.loadFile(path.join(__dirname, 'public', 'index.html'));
+    mainWindow.loadFile(path.join(__dirname, 'public', 'waitingroom.html'));
 
     mainWindow.on('closed', () => {
         mainWindow = null;

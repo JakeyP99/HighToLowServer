@@ -251,15 +251,20 @@
             33% { content: '..'; }
             66% { content: '...'; }
         }
+
+        #playerCountDisplay {
+            font-size: 16px;
+            color: #333;
+            margin-top: 20px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="content-container">
         <h1>Waiting Room</h1>
-        <div class="waiting-message">
-            Waiting for other players to join<span class="loading-dots"></span>
-        </div>
-        <ul id="playerList"></ul>
+        <div id="playerCount" class="waiting-message">Waiting for other players to join...</div>
+        <div id="playerList" class="player-list"></div>
     </div>
 
     <!-- Load socket.io from the server -->
@@ -395,8 +400,15 @@
 
         // Listen for new player events
         const socket = io();
+        const playerCountDisplay = document.getElementById('playerCountDisplay');
+
         socket.on('playerJoined', () => {
             createConfetti();
+        });
+
+        socket.on('playerCountUpdate', (currentPlayers, totalPlayers) => {
+            const playersNeeded = totalPlayers - currentPlayers;
+            playerCountDisplay.textContent = `Waiting for ${playersNeeded} more players...`;
         });
     </script>
 </body>
