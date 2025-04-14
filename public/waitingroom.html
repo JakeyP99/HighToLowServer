@@ -168,41 +168,38 @@
             padding: 0;
             width: 100%;
             max-width: 600px;
-            margin: 0 auto;
+            margin: 20px auto;
         }
 
-        #playerList li {
+        .player-item {
             background: rgba(255, 255, 255, 0.1);
             margin: 10px 0;
-            padding: 15px 20px;
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
-            transform: translateX(0);
+            padding: 15px 25px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
             transition: all 0.3s ease;
-            animation: slideIn 0.5s ease;
-            position: relative;
-            overflow: hidden;
+            border-left: 4px solid #4ecdc4;
+            animation: slideIn 0.5s ease-out;
         }
 
-        #playerList li:hover {
-            transform: translateX(10px) scale(1.02);
-            background: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        .player-item:hover {
+            transform: translateX(10px);
+            background: rgba(255, 255, 255, 0.15);
+            border-left-color: #ff6b6b;
         }
 
-        #playerList li::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: 0.5s;
+        .player-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
         }
 
-        #playerList li:hover::after {
-            left: 100%;
+        .player-class {
+            font-size: 1.1em;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
         }
 
         .loading-dots {
@@ -242,8 +239,14 @@
         }
 
         @keyframes slideIn {
-            from { transform: translateX(-50px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         @keyframes loading {
@@ -258,22 +261,129 @@
             margin-top: 20px;
             font-weight: bold;
         }
+
+        #playerCount {
+            font-size: 1.5em;
+            color: #ffffff;
+            text-align: center;
+            margin: 20px 0;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .total-players {
+            font-size: 1.3em;
+            color: #4ecdc4;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+        }
+
+        #clock {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            font-size: 1.2em;
+            color: #4ecdc4;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+            font-family: 'Arial', sans-serif;
+            z-index: 1000;
+        }
+
+        #timer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 1.2em;
+            color: #4ecdc4;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+            font-family: 'Arial', sans-serif;
+            z-index: 1000;
+        }
+
+        .connection-notice {
+            font-size: 1.2em;
+            color: #4ecdc4;
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .connection-notice.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
     <div class="content-container">
         <h1>Waiting Room</h1>
-        <div id="playerCount" class="waiting-message">Waiting for other players to join...</div>
-        <div id="playerList" class="player-list"></div>
+        <div id="playerCount">Waiting for players to join...</div>
+        <div id="connectedClients" class="total-players">👥 Connected clients: 0</div>
+        <div id="newConnection" class="connection-notice"></div>
+        <ul id="playerList"></ul>
     </div>
-
-    <!-- Load socket.io from the server -->
-    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
-    <!-- Load our waiting room script -->
-    <script src="waitingroom.js"></script>
+    
+    <div id="clock">Perth: 00:00:00</div>
+    <div id="timer">Time: 0s</div>
 
     <script>
-        // Game elements that will float up
+        console.log('Starting script execution...');
+
+        // Test DOM elements exist
+        console.log('Clock element:', document.getElementById('clock'));
+        console.log('Timer element:', document.getElementById('timer'));
+
+        // Timer function
+        let seconds = 0;
+        function updateTimer() {
+            console.log('Updating timer...');
+            seconds++;
+            const timerElement = document.getElementById('timer');
+            if (timerElement) {
+                timerElement.textContent = `Time: ${seconds}s`;
+                console.log('Timer updated to:', seconds);
+            } else {
+                console.error('Timer element not found!');
+            }
+        }
+
+        // Start timer immediately
+        console.log('Starting timer...');
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+
+        // Clock update function
+        function updateClock() {
+            console.log('Updating clock...');
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            const clockElement = document.getElementById('clock');
+            if (clockElement) {
+                clockElement.textContent = `Perth: ${hours}:${minutes}:${seconds}`;
+                console.log('Clock updated to:', clockElement.textContent);
+            } else {
+                console.error('Clock element not found!');
+            }
+        }
+
+        // Start clock immediately
+        console.log('Starting clock...');
+        updateClock();
+        const clockInterval = setInterval(updateClock, 1000);
+
+        // Game elements that will float
         const gameElements = [
             { emoji: '🎮', size: '24px', color: '#ff6b6b' },
             { emoji: '🎲', size: '28px', color: '#4ecdc4' },
@@ -301,15 +411,9 @@
             const floatingDiv = document.createElement('div');
             floatingDiv.className = 'floating-object';
             
-            // Randomly choose which side to start from
             const sides = ['left', 'right', 'top', 'bottom'];
             const side = sides[Math.floor(Math.random() * sides.length)];
             floatingDiv.classList.add('float-' + side);
-            
-            // Calculate random start and target positions
-            const screenMiddle = window.innerWidth / 2;
-            const containerMiddle = containerRect.left + (containerRect.width / 2);
-            const isLeftSide = Math.random() > 0.5;
             
             let startX, startY, targetX, targetY, floatDistance;
             
@@ -319,12 +423,6 @@
                     startY = Math.random() * (window.innerHeight - 200) + 100;
                     floatDistance = Math.random() * 300 + 200;
                     targetY = startY + (Math.random() * 200 - 100);
-                    
-                    if (side === 'left') {
-                        targetX = isLeftSide ? containerRect.left - 100 : containerRect.right + 100;
-                    } else {
-                        targetX = isLeftSide ? containerRect.left - 100 : containerRect.right + 100;
-                    }
                     
                     floatingDiv.style.setProperty('--start-y', startY + 'px');
                     floatingDiv.style.setProperty('--target-y', targetY - startY + 'px');
@@ -343,7 +441,6 @@
                     break;
             }
             
-            // Random animation duration between 5 and 8 seconds
             floatingDiv.style.animationDuration = (Math.random() * 3 + 5) + 's';
             
             const gameElement = document.createElement('div');
@@ -355,7 +452,6 @@
             floatingDiv.appendChild(gameElement);
             document.body.appendChild(floatingDiv);
             
-            // Remove element after animation completes
             setTimeout(() => {
                 floatingDiv.remove();
             }, 8000);
@@ -369,47 +465,88 @@
         // Keep creating new floating elements
         setInterval(createFloatingElement, 1200);
 
-        // Add confetti effect when new player joins
-        function createConfetti() {
-            for (let i = 0; i < 50; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                
-                // Get content container position and size
-                const container = document.querySelector('.content-container');
-                const containerRect = container.getBoundingClientRect();
-                
-                // Calculate safe zones for confetti
-                let x;
-                do {
-                    x = Math.random() * window.innerWidth;
-                } while (x > containerRect.left - 50 && x < containerRect.right + 50);
-                
-                confetti.style.left = x + 'px';
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.width = Math.random() * 10 + 5 + 'px';
-                confetti.style.height = Math.random() * 10 + 5 + 'px';
-                confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
-                document.body.appendChild(confetti);
-                
-                setTimeout(() => {
-                    confetti.remove();
-                }, 5000);
+        // Make sure intervals are cleared when page is unloaded
+        window.addEventListener('unload', () => {
+            clearInterval(timerInterval);
+            clearInterval(clockInterval);
+        });
+    </script>
+
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script>
+        const socket = io('http://localhost:3000', {
+            transports: ['websocket', 'polling'],
+            upgrade: true,
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            timeout: 20000,
+            autoConnect: true
+        });
+
+        socket.on('connect', () => {
+            console.log('Socket connected with ID:', socket.id);
+            socket.emit('requestInitialState');
+            const connectionNotice = document.getElementById('newConnection');
+            connectionNotice.textContent = `New client connected: ${socket.id}`;
+            connectionNotice.classList.add('show');
+            
+            // Hide the notice after 5 seconds
+            setTimeout(() => {
+                connectionNotice.classList.remove('show');
+            }, 5000);
+        });
+
+        socket.on('clientCountUpdate', (count) => {
+            console.log('Received client count update:', count);
+            const clientsElement = document.getElementById('connectedClients');
+            if (clientsElement) {
+                clientsElement.textContent = `👥 Connected clients: ${count}`;
             }
-        }
-
-        // Listen for new player events
-        const socket = io();
-        const playerCountDisplay = document.getElementById('playerCountDisplay');
-
-        socket.on('playerJoined', () => {
-            createConfetti();
         });
 
-        socket.on('playerCountUpdate', (currentPlayers, totalPlayers) => {
-            const playersNeeded = totalPlayers - currentPlayers;
-            playerCountDisplay.textContent = `Waiting for ${playersNeeded} more players...`;
+        socket.on('updatePlayers', (players) => {
+            console.log('Received players update:', players);
+            const playerList = document.getElementById('playerList');
+            if (playerList) {
+                playerList.innerHTML = '';
+                if (players && Array.isArray(players)) {
+                    players.forEach(player => {
+                        console.log('Processing player:', player);
+                        const li = document.createElement('li');
+                        li.className = 'player-item';
+                        li.innerHTML = `
+                            <div class="player-name">${player.name || 'Unknown Player'}</div>
+                        `;
+                        playerList.appendChild(li);
+                    });
+                } else {
+                    console.error('Invalid players data received:', players);
+                }
+            } else {
+                console.error('Player list element not found!');
+            }
         });
+
+        // Log socket connection status
+        socket.on('disconnect', () => {
+            console.log('Socket disconnected');
+        });
+
+        socket.on('error', (error) => {
+            console.error('Socket error:', error);
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Socket connection error:', error);
+        });
+
+        // Request initial state periodically
+        setInterval(() => {
+            if (socket.connected) {
+                socket.emit('requestInitialState');
+            }
+        }, 5000);
     </script>
 </body>
 </html>

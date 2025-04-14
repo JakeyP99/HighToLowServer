@@ -8,57 +8,89 @@ const io = socketIo(server);
 
 let players = [];
 let totalPlayers = 0;
-let currentPlayers = 0;
+let connectedClients = 0;
+
+// Serve static files from the public directory
+app.use(express.static('public'));
 
 io.on('connection', (socket) => {
-    console.log('New client connected');
-    currentPlayers++;
+    console.log('New client connected:', socket.id);
+    connectedClients++;
     
-    // Handle player count updates
-    socket.on('setPlayerCount', (count) => {
-        console.log(`Received setPlayerCount event from ${socket.id}`);
-        console.log(`Player count set to: ${count}`);
-        totalPlayers = count;
-        // Broadcast the player count update to all clients
-        io.emit('playerCountUpdate', currentPlayers, totalPlayers);
-        console.log(`Broadcasting player count update - Current: ${currentPlayers}, Total: ${totalPlayers}`);
+    // Broadcast the new connection count to all clients
+    io.emit('clientCountUpdate', connectedClients);
+
+
+    // Handle initial state request
+    socket.on('requestInitialState', () => {
+        console.log(`Client ${socket.id} requested initial state`);
+        socket.emit('playerCountUpdate', players.length, totalPlayers);
+        socket.emit('clientCountUpdate', connectedClients);
+        socket.emit('updatePlayers', players);
+        console.log('Sent initial state:', {
+            connectedClients,
+            currentPlayers: players.length,
+            totalPlayers: totalPlayers,
+            players: players
+        });
     });
 
-    // Handle disconnection
+    socket.on('setPlayerCount', (count) => {
+        console.log(`Received setPlayerCount event from ${socket.id}`);
+        console.log(`Setting player count to: ${count}`);
+        
+        // Update total players
+        totalPlayers = parseInt(count);
+        
+        // Broadcast to ALL clients including sender
+        io.emit('playerCountUpdate', players.length, totalPlayers);
+        io.emit('updatePlayers', players);
+        console.log(`Broadcasting player count update - Current: ${players.length}, Total: ${totalPlayers}`);
+    });
+
+    socket.on('join', (playerData) => {
+        console.log('Received join event from', socket.id, ':', playerData);
+        
+        // Remove any existing player with same socket ID
+        players = players.filter(p => p.id !== socket.id);
+        
+        // Add new player
+        const newPlayer = {
+            id: socket.id,
+            name: playerData.name,
+            classChoice: playerData.classChoice
+        };
+        players.push(newPlayer);
+        
+        // Broadcast updates to ALL clients
+        io.emit('updatePlayers', players);
+        io.emit('playerCountUpdate', players.length, totalPlayers);
+        
+        console.log('Current players:', players);
+        console.log(`Current/Total players: ${players.length}/${totalPlayers}`);
+    });
+
     socket.on('disconnect', () => {
-        console.log('Client disconnected');
-        currentPlayers--;
-        // Broadcast the updated player count when someone disconnects
-        io.emit('playerCountUpdate', currentPlayers, totalPlayers);
-        console.log(`Broadcasting player count update after disconnect - Current: ${currentPlayers}, Total: ${totalPlayers}`);
+        console.log('Client disconnected:', socket.id);
+        connectedClients--;
+        players = players.filter(p => p.id !== socket.id);
+        io.emit('updatePlayers', players);
+        io.emit('playerCountUpdate', players.length, totalPlayers);
+        io.emit('clientCountUpdate', connectedClients);
     });
 
     // Assign host status to first connected player
     if (players.length === 0) {
-        socket.emit("hostAssigned", true); // this user is the host
+        socket.emit("hostAssigned", true);
     } else {
-        socket.emit("hostAssigned", false); // this user is not the host
+        socket.emit("hostAssigned", false);
     }
-
-    // Handle player joining the game
-    socket.on('join', (name) => {
-        console.log(`Received 'join' event with name: ${name}`);
-        players.push({ id: socket.id, name });
-        console.log('Updated players:', players);
-        io.emit('updatePlayers', players);  // Tell all clients the updated list
-    });
 
     // Handle game starting (if needed)
     socket.on('startGame', () => {
         io.emit('gameStarted');
     });
-
-    // Add logging for connection and disconnection
-    console.log(`New connection established. Current players: ${currentPlayers}`);
 });
-
-// Serve static files from the public folder
-app.use(express.static('public'));
 
 // Graceful shutdown handler
 process.on('SIGTERM', shutdown);
@@ -66,17 +98,11 @@ process.on('SIGINT', shutdown);
 
 function shutdown() {
     console.log('Starting graceful shutdown...');
-    
-    // Notify all clients that the server is shutting down
     io.emit('serverShutdown');
-    
-    // Close the server
     server.close(() => {
         console.log('Server closed');
         process.exit(0);
     });
-
-    // If server hasn't closed in 10 seconds, force shutdown
     setTimeout(() => {
         console.error('Could not close connections in time, forcefully shutting down');
         process.exit(1);

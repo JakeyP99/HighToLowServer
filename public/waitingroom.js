@@ -1,15 +1,47 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io.connect('http://localhost:3000');
+    // Connect to the socket server
+    const socket = io();
+    
+    // Debug logging for connection status
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
 
-    console.log("Waiting room script loaded");
+    socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+    });
 
     socket.on('updatePlayers', (players) => {
+        console.log('Received players update:', players);
         const playerList = document.getElementById('playerList');
+        if (!playerList) {
+            console.error('Player list element not found');
+            return;
+        }
+
+        // Clear existing list
         playerList.innerHTML = '';
 
+        // Add each player to the list
         players.forEach(player => {
+            console.log('Adding player:', player);
             const li = document.createElement('li');
-            li.textContent = player.name;
+            li.className = 'player-item';
+            
+            // Add player name
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'player-name';
+            nameDiv.textContent = player.name || 'Unknown Player';
+            
+            // Add player class
+            const classDiv = document.createElement('div');
+            classDiv.className = 'player-class';
+            classDiv.textContent = player.classChoice || 'No class selected';
+            
+            // Assemble the elements
+            li.appendChild(nameDiv);
+            li.appendChild(classDiv);
+            
             playerList.appendChild(li);
         });
     });
@@ -41,13 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('playerCountUpdate', (currentPlayers, totalPlayers) => {
+        console.log('Received player count update:', currentPlayers, totalPlayers);
         const playerCountElement = document.getElementById('playerCount');
+        if (!playerCountElement) {
+            console.error('Player count element not found');
+            return;
+        }
+
         const remainingPlayers = totalPlayers - currentPlayers;
-        
         if (remainingPlayers > 0) {
             playerCountElement.textContent = `Waiting for ${remainingPlayers} more player${remainingPlayers === 1 ? '' : 's'} to join...`;
         } else {
-            playerCountElement.textContent = 'All players have joined!';
+            playerCountElement.textContent = 'All players have joined! Game starting soon...';
         }
     });
 
